@@ -1,0 +1,6 @@
+{
+  "name": "Flashcard App",
+  "description": "แอปเรียนรู้คำศัพท์ภาษาอังกฤษด้วยการ์ดคำศัพท์ 3D พลิกได้ บันทึกข้อมูลผ่าน LocalStorage",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

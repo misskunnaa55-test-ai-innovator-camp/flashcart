@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcard App (การ์ดคำศัพท์พลิกได้) • เรียนภาษาอังกฤษ</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & Babel CDN for Single File Sandbox -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: "Plus Jakarta Sans", "Sarabun", sans-serif;
+      background-color: #f8fafc;
+    }
+    
+    /* 3D card layout */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .preserve-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-4 sm:p-6">
+
+  <!-- React Root -->
+  <div id="root"></div>
+
+  <!-- React Code with Babel -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const INITIAL_FLASHCARDS = [
+      {
+        id: 'default-1',
+        word: 'Meticulous',
+        translation: 'พิถีพิถัน, ละเอียดลอออย่างยิ่ง',
+        partOfSpeech: 'adjective',
+        pronunciation: '/məˈtɪkjələs/',
+        example: 'She was meticulous about keeping her medical records extremely organized.',
+        exampleTranslation: 'เธอเป็นคนพิถีพิถันกับการดูแลจัดระเบียบประวัติทางการแพทย์ของเธออย่างยิ่ง',
+        status: 'learning'
+      },
+      {
+        id: 'default-2',
+        word: 'Ephemeral',
+        translation: 'คงอยู่เพียงชั่วครู่, ไม่จีรัง, มีอายุสั้น',
+        partOfSpeech: 'adjective',
+        pronunciation: '/ɪˈfemərəl/',
+        example: 'Fame in the internet age can be ephemeral, lasting only for a few days.',
+        exampleTranslation: 'ชื่อเสียงในยุคอินเทอร์เน็ตอาจเป็นสิ่งชั่วครู่ จัดอยู่ได้เพียงไม่กี่วันเท่านั้น',
+        status: 'learning'
+      },
+      {
+        id: 'default-3',
+        word: 'Acquire',
+        translation: 'ได้รับมา, ได้รับความรู้หรือทักษะมา',
+        partOfSpeech: 'verb',
+        pronunciation: '/əˈkwaɪər/',
+        example: 'She managed to acquire a good fluent command of English after moving to London.',
+        exampleTranslation: 'เธอสามารถฝึกฝนจนได้รับทักษะความคล่องแคล่วในการใช้ภาษาอังกฤษหลังจากย้ายไปลอนดอน',
+        status: 'learning'
+      },
+      {
+        id: 'default-4',
+        word: 'Benevolent',
+        translation: 'เมตตากรุณา, ใจกว้าง, ประสงค์ดี',
+        partOfSpeech: 'adjective',
+        pronunciation: '/bəˈnevələnt/',
+        example: 'The school was founded by a benevolent local businessman.',
+        exampleTranslation: 'โรงเรียนแห่งนี้ก่อตั้งขึ้นโดยนักธุรกิจท้องถิ่นผู้มีจิตเมตตากรุณา',
+        status: 'learning'
+      },
+      {
+        id: 'default-5',
+        word: 'Resilient',
+        translation: 'ยืดหยุ่น, ล้มแล้วลุกเร็ว, ฟื้นตัวเร็ว',
+        partOfSpeech: 'adjective',
+        pronunciation: '/rɪˈzɪliənt/',
+        example: 'Children are often remarkably resilient and adapt quickly to new surroundings.',
+        exampleTranslation: 'เด็กๆ มักจะมีความยืดหยุ่นและฟื้นตัวได้ดีเป็นอย่างยิ่ง ตลอดจนปรับตัวเข้ากับสภาพแวดล้อมใหม่ได้อย่างรวดเร็ว',
+        status: 'learning'
+      },
+      {
+        id: 'default-6',
+        word: 'Cognitive',
+        translation: 'เกี่ยวกับกระบวนการคิด รับรู้ และความเข้าใจ',
+        partOfSpeech: 'adjective',
+        pronunciation: '/ˈkɒɡnətɪv/',
+        example: 'Reading books is a great way to improve your cognitive abilities.',
+        exampleTranslation: 'การอ่านหนังสือเป็นวิธีที่ยอดเยี่ยมในการพัฒนาความสามารถด้านกระบวนการคิดและรับรู้ของคุณ',
+        status: 'learning'
+      },
+      {
+        id: 'default-7',
+        word: 'Ambiguous',
+        translation: 'กำกวม, คลุมเครือ, ตีความได้หลายความหมาย',
+        partOfSpeech: 'adjective',
+        pronunciation: '/æmˈbɪɡjuəs/',
+        example: 'The ending of the movie was ambiguous, leaving the audience to parse its true meaning.',
+        exampleTranslation: 'ตอนจบของภาพยนตร์เรื่องนี้ค่อนข้างกำกวม ปล่อยให้ผู้ชมตีความความหมายที่แท้จริงเอาเอง',
+        status: 'learning'
+      },
+      {
+        id: 'default-8',
+        word: 'Inevitable',
+        translation: 'หลีกเลี่ยงไม่ได้, ต้องเกิดขึ้นอย่างแน่นอน',
+        partOfSpeech: 'adjective',
+        pronunciation: '/ɪnˈevɪtəbəl/',
+        example: 'With more vehicles on the road, an increase in traffic congestion is inevitable.',
+        exampleTranslation: 'มีรถยนต์บนท้องถนนมากขึ้น การเพิ่มขึ้นของปัญหารถติดจึงเป็นสิ่งหลีกเลี่ยงไม่ได้',
+        status: 'learning'
+      },
+      {
+        id: 'default-9',
+        word: 'Scrutinize',
+        translation: 'ตรวจสอบหรือพิจารณาอย่างละเอียดถี่ถ้วน',
+        partOfSpeech: 'verb',
+        pronunciation: '/ˈskruːtənaɪz/',
+        example: 'Customers are advised to scrutinize historical terms before signing.',
+        exampleTranslation: 'แนะนำให้ลูกค้าตรวจสอบเงื่อนไขย้อนหลังอย่างละเอียดถี่ถ้วนนก่อนทำการลงนาม',
+        status: 'learning'
+      },
+      {
+        id: 'default-10',
+        word: 'Alleviate',
+        translation: 'บรรเทา, ทำให้น้อยลง, ทำให้อาการเบาบางลง',
+        partOfSpeech: 'verb',
+        pronunciation: '/əːliːvieɪt/',
+        example: 'A warm bath can help to alleviate joint muscle pain and stiffness.',
+        exampleTranslation: 'การแช่น้ำอุ่นสามารถช่วยบรรเทาอาการปวดตึงและแข็งเกร็งของกล้ามเนื้อได้',
+        status: 'learning'
+      }
+    ];
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function App() {
+      const [cards, setCards] = useState(() => {
+        const saved = localStorage.getItem('vocab-cards-standalone');
+        if (saved) {
+          try { return JSON.parse(saved); } catch (e) {}
+        }
+        return INITIAL_FLASHCARDS;
+      });
+
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [isFlipped, setIsFlipped] = useState(false);
+      const [isShuffleMode, setIsShuffleMode] = useState(false);
+      
+      // Form States
+      const [newWord, setNewWord] = useState('');
+      const [newTranslation, setNewTranslation] = useState('');
+      const [newPos, setNewPos] = useState('noun');
+      const [newPronunciation, setNewPronunciation] = useState('');
+      const [newExample, setNewExample] = useState('');
+      const [newExampleTranslation, setNewExampleTranslation] = useState('');
+
+      const [searchQuery, setSearchQuery] = useState('');
+      const [filterType, setFilterType] = useState('all');
+      const [formMessage, setFormMessage] = useState(null);
+
+      useEffect(() => {
+        localStorage.setItem('vocab-cards-standalone', JSON.stringify(cards));
+      }, [cards]);
+
+      // Initialize lucide icons on render/update
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      const currentCard = cards[currentIndex] || cards[0] || null;
+
+      const handleNext = () => {
+        if (cards.length <= 1) return;
+        setIsFlipped(false);
+        setTimeout(() => {
+          if (isShuffleMode) {
+            let nextIndex = currentIndex;
+            while (nextIndex === currentIndex) {
+              nextIndex = Math.floor(Math.random() * cards.length);
+            }
+            setCurrentIndex(nextIndex);
+          } else {
+            setCurrentIndex((prev) => (prev + 1) % cards.length);
+          }
+        }, 180);
+      };
+
+      const handlePrev = () => {
+        if (cards.length <= 1) return;
+        setIsFlipped(false);
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+        }, 180);
+      };
+
+      const handleSpeak = (e, text) => {
+        e.stopPropagation();
+        speak(text);
+      };
+
+      const handleStatusChange = (id, newStatus) => {
+        setCards(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      };
+
+      const handleAddCard = (e) => {
+        e.preventDefault();
+        if (!newWord.trim() || !newTranslation.trim()) {
+          setFormMessage({ type: 'error', text: 'กรุณากรอก "คำศัพท์" และ "คำแปล" ให้ครบถ้วน' });
+          return;
+        }
+
+        const addedCard = {
+          id: 'custom-' + Date.now(),
+          word: newWord.trim(),
+          translation: newTranslation.trim(),
+          partOfSpeech: newPos,
+          pronunciation: newPronunciation.trim() || `/${newWord.trim().toLowerCase()}/`,
+          example: newExample.trim(),
+          exampleTranslation: newExampleTranslation.trim(),
+          status: 'learning',
+          isCustom: true
+        };
+
+        setCards(prev => [addedCard, ...prev]);
+        setCurrentIndex(0);
+        setIsFlipped(false);
+
+        // Reset
+        setNewWord('');
+        setNewTranslation('');
+        setNewPos('noun');
+        setNewPronunciation('');
+        setNewExample('');
+        setNewExampleTranslation('');
+        
+        setFormMessage({ type: 'success', text: 'บันทึกคำศัพท์เรียบร้อยแล้ว!' });
+        setTimeout(() => setFormMessage(null), 3000);
+      };
+
+      const handleDeleteCard = (id) => {
+        if (cards.length <= 1) {
+          alert('จำเป็นต้องมีคำศัพท์เหลืออยู่อย่างน้อย 1 คำ');
+          return;
+        }
+        setIsFlipped(false);
+        setTimeout(() => {
+          const idxToDelete = cards.findIndex(c => c.id === id);
+          const updated = cards.filter(c => c.id !== id);
+          setCards(updated);
+          if (currentIndex >= updated.length) {
+            setCurrentIndex(updated.length - 1);
+          } else if (idxToDelete === currentIndex) {
+            setCurrentIndex(Math.max(0, currentIndex - 1));
+          }
+        }, 180);
+      };
+
+      const handleResetProgress = () => {
+        if (confirm('ล้างคะแนนสะสมและกลับสู่จุดเริ่มต้นเรียนรู้ใหม่ใช่หรือไม่?')) {
+          setCards(prev => prev.map(c => ({ ...c, status: 'learning' })));
+          setIsFlipped(false);
+          setCurrentIndex(0);
+        }
+      };
+
+      const handleRestoreDefaults = () => {
+        if (confirm('ลบคลังคำศัพท์ที่คุณสร้างไว้ทั้งหมดและคืนค่าเริ่มต้นใช่หรือไม่?')) {
+          setCards(INITIAL_FLASHCARDS);
+          setCurrentIndex(0);
+          setIsFlipped(false);
+          localStorage.removeItem('vocab-cards-standalone');
+        }
+      };
+
+      const total = cards.length;
+      const mastered = cards.filter(c => c.status === 'mastered').length;
+      const learning = total - mastered;
+      const progressPercent = total > 0 ? Math.round((mastered / total) * 100) : 0;
+
+      const filteredCards = cards.filter(c => {
+        const matchText = c.word.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          c.translation.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!matchText) return false;
+        if (filterType === 'learning') return c.status === 'learning';
+        if (filterType === 'mastered') return c.status === 'mastered';
+        if (filterType === 'custom') return c.isCustom;
+        return true;
+      });
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <header className="flex flex-col sm:flex-row justify-between items-center bg-white rounded-2xl border border-slate-200 py-4 px-6 shadow-sm gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                <i data-lucide="layers" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-1.5">
+                  <span>การ์ดคำศัพท์พลิกได้</span>
+                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">STANDALONE</span>
+                </h1>
+                <p className="text-xs text-slate-400 font-medium">ท่องศัพท์ภาษาอังกฤษด้วย Active Recall และ 3D แอนิเมชัน</p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg">
+              🎯 ระบบเซฟอัตโนมัติ (LocalStorage)
+            </span>
+          </header>
+
+          <main className="grid grid-cols-1 gap-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm flex flex-col items-center justify-center">
+              <div className="w-full max-w-lg mx-auto flex justify-between items-center mb-6 text-xs text-slate-400 font-semibold">
+                <div>
+                  การ์ดใบที่ <b className="text-slate-700">{currentIndex + 1}</b> จาก <b className="text-slate-700">{cards.length}</b> คำ
+                </div>
+                
+                <button
+                  onClick={() => setIsShuffleMode(!isShuffleMode)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded border transition font-semibold text-xs ${
+                    isShuffleMode ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <i data-lucide="shuffle" class="w-3 h-3"></i>
+                  <span>{isShuffleMode ? 'สุ่มคำศัพท์' : 'ลำดับปกติ'}</span>
+                </button>
+              </div>
+
+              {currentCard ? (
+                <div className="w-full max-w-lg mx-auto">
+                  <div 
+                    onClick={() => setIsFlipped(!isFlipped)} 
+                    className="w-full h-80 sm:h-96 perspective-1000 cursor-pointer select-none"
+                  >
+                    <div className={`relative w-full h-full duration-700 preserve-3d transition-transform ${isFlipped ? 'rotate-y-180' : ''}`}>
+                      
+                      {/* FRONT FACE */}
+                      <div className="absolute inset-0 w-full h-full rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-md flex flex-col justify-between backface-hidden">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200 px-2 py-0.5 rounded-full uppercase">
+                            {currentCard.partOfSpeech}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {currentCard.status === 'mastered' ? 'จำได้ขึ้นใจ ⭐' : 'ต้องทบทวน'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col items-center text-center my-auto">
+                          <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 tracking-tight break-all">
+                            {currentCard.word}
+                          </h2>
+                          <p className="text-slate-500 font-mono tracking-wide text-sm sm:text-base mt-2">
+                            {currentCard.pronunciation}
+                          </p>
+                          <button
+                            onClick={(e) => handleSpeak(e, currentCard.word)}
+                            className="mt-4 p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-full transition"
+                            title="ฟังเสียงพูด"
+                          >
+                            <i data-lucide="volume-2" class="w-5 h-5"></i>
+                          </button>
+                        </div>
+
+                        <div className="text-center text-xs text-slate-400">
+                          <span>คลิกแผ่นการ์ดเพื่อสลับดูคำแปล</span>
+                        </div>
+                      </div>
+
+                      {/* BACK FACE */}
+                      <div className="absolute inset-0 w-full h-full rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8 shadow-md flex flex-col justify-between rotate-y-180 backface-hidden">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold bg-sky-100 text-sky-850 px-2 py-0.5 rounded-full uppercase">
+                            {currentCard.partOfSpeech}
+                          </span>
+                          <span className="text-xs font-bold text-indigo-600">คำแปลด้านหลัง</span>
+                        </div>
+
+                        <div className="flex flex-col justify-center my-auto text-center py-2">
+                          <h3 className="text-2xl sm:text-3xl font-extrabold text-indigo-900 border-b border-dashed border-slate-300 pb-3">
+                            {currentCard.translation}
+                          </h3>
+                          
+                          {currentCard.example && (
+                            <div className="bg-white p-3 rounded-xl border border-slate-100 mt-4 text-left shadow-2xs max-h-32 overflow-y-auto">
+                              <small className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ตัวอย่างประโยค</small>
+                              <p className="text-xs sm:text-sm italic font-semibold text-slate-700">"{currentCard.example}"</p>
+                              {currentCard.exampleTranslation && (
+                                <p className="text-xs text-slate-500 mt-0.5">({currentCard.exampleTranslation})</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleStatusChange(currentCard.id, 'learning')}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1 ${
+                              currentCard.status === 'learning' ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i>
+                            <span>ยังไม่คล่อง</span>
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(currentCard.id, 'mastered')}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1 ${
+                              currentCard.status === 'mastered' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+                            <span>จำแม่นแล้ว</span>
+                          </button>
+                        </div>
+
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Deck Navigation buttons */}
+              <div className="w-full max-w-lg mx-auto flex items-center justify-between gap-4 mt-8">
+                <button
+                  onClick={handlePrev}
+                  disabled={cards.length <= 1}
+                  className="flex items-center justify-center gap-1 border border-slate-200 hover:bg-slate-50 disabled:opacity-40 bg-white py-2 px-4 rounded-xl text-xs font-bold text-slate-600 transition"
+                >
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                  <span>ย้อนกลับ</span>
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={cards.length <= 1}
+                  className="flex items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-5 rounded-xl text-xs font-bold transition"
+                >
+                  <span>คำถัดไป</span>
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* VISUAL STATS GAUGE */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-indigo-50 border-4 border-indigo-500 flex items-center justify-center text-indigo-700 font-extrabold text-lg">
+                  {progressPercent}%
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">ความสำเร็จสะสม</h4>
+                  <p className="text-base font-bold text-slate-800">{mastered} จาก {total} คำ ท่องจำสำเร็จแล้ว</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="text-center">
+                  <span className="block text-xl font-extrabold text-slate-800">{total}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">ทั้งหมด</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-xl font-extrabold text-emerald-600">{mastered}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">จำได้แล้ว</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-xl font-extrabold text-amber-600">{learning}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">กำลังจำ</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={handleResetProgress} className="text-slate-500 hover:text-indigo-600 border border-slate-200 hover:bg-slate-50 p-2 rounded-lg text-xs font-semibold flex items-center gap-1">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> ล้างค่า
+                </button>
+              </div>
+            </div>
+
+            {/* MANAGEMENT OF WORDS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Form Input fields */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <form onSubmit={handleAddCard} className="space-y-4">
+                  <h3 className="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i> เพิ่มคำศัพท์ใหม่
+                  </h3>
+
+                  {formMessage && (
+                    <div className={`p-2 rounded text-xs font-semibold ${formMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                      {formMessage.text}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">คำศัพท์ภาษาอังกฤษ *</label>
+                      <input type="text" value={newWord} onChange={(e) => setNewWord(e.target.value)} placeholder="เช่น Meticulous" className="w-full text-xs px-3 py-2 border rounded-lg focus:ring focus:ring-indigo-200" required />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">คำแปลภาษาไทย *</label>
+                      <input type="text" value={newTranslation} onChange={(e) => setNewTranslation(e.target.value)} placeholder="เช่น พิถีพิถัน" className="w-full text-xs px-3 py-2 border rounded-lg focus:ring focus:ring-indigo-200" required />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">คำอ่าน (Phonetic)</label>
+                      <input type="text" value={newPronunciation} onChange={(e) => setNewPronunciation(e.target.value)} placeholder="เช่น /məˈtɪkjələs/" className="w-full text-xs px-3 py-2 border rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ชนิดของคำ (POS)</label>
+                      <select value={newPos} onChange={(e) => setNewPos(e.target.value)} className="w-full text-xs px-3 py-2 border rounded-lg bg-white">
+                        <option value="noun">Noun (คำนาม)</option>
+                        <option value="verb">Verb (คำกริยา)</option>
+                        <option value="adjective">Adjective (คุณศัพท์)</option>
+                        <option value="adverb">Adverb (กริยาวิเศษณ์)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ตัวอย่างประโยค (ไม่บังคับ)</label>
+                    <textarea rows="2" value={newExample} onChange={(e) => setNewExample(e.target.value)} placeholder="She was meticulous about records." className="w-full text-xs p-2.5 border rounded-lg"></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">คำแปลตัวอย่างในประโยค (ไม่บังคับ)</label>
+                    <input type="text" value={newExampleTranslation} onChange={(e) => setNewExampleTranslation(e.target.value)} placeholder="เธอเป็นคนดูแลประวัติอย่างละเอียด" className="w-full text-xs px-3 py-2 border rounded-lg" />
+                  </div>
+
+                  <button type="submit" className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs transition">
+                    + บันทึกคำศัพท์เข้าสู่คลัง
+                  </button>
+                </form>
+              </div>
+
+              {/* Dict list & search */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col h-112">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-3">
+                  <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1">
+                    <i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i> คลังศัพท์ภาษาอังกฤษ ({cards.length})
+                  </h3>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ค้นหาตามภาษาไทย-อังกฤษ"
+                    className="w-full sm:w-48 text-xs p-2 border rounded-lg focus:ring"
+                  />
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  {filteredCards.map((card, idx) => {
+                    const trueIndex = cards.findIndex(c => c.id === card.id);
+                    return (
+                      <div key={card.id} onClick={() => { setCurrentIndex(trueIndex); setIsFlipped(false); }} className={`p-2.5 rounded-lg border flex items-center justify-between gap-2 cursor-pointer transition ${currentCard.id === card.id ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-xs">{card.word}</span>
+                            <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500 uppercase">{card.partOfSpeech}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">{card.translation}</p>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                          <button onClick={() => handleDeleteCard(card.id)} className="text-slate-400 hover:text-red-500 p-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          </main>
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
